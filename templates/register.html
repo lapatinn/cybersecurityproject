@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link rel="stylesheet" href="/static/main.css">
+  <title>Luo tunnus</title>
+</head>
+
+<body>
+  <div class="header">
+  <h1>
+    Luo tunnus
+  </h1>
+  </div>
+
+  <div class="nav">
+    <a href="/">Etusivulle</a> |
+    <a href="/movie_reviews">Arvostelut</a> |
+    <a href="/new_item">Luo arvostelu</a> |
+    <a href="/find_review">Etsi arvostelu</a> |
+    <a href="/all_users">Käyttäjät</a> 
+  </div>
+  
+  <div class="content">
+  <form action="/create" method="post">
+
+    {% for message in get_flashed_messages() %}
+    <p>
+      <b>{{ message }}</b>
+    </p>
+    {% endfor %}
+
+    <p>
+      Tunnus: <br />
+      <input type="text" name="username" maxlength="16" value="{{ username }}" required/>
+    </p>
+    <p>
+      Salasana: <br />
+      <input type="password" name="password1" value="{{ password1 }}"required/>
+    </p>
+    <p>
+      Salasana uudestaan: <br />
+      <input type="password" name="password2" value="{{ password2 }}"required/>
+    </p>
+    <input type="submit" value="Luo tunnus" />
+  </form>
+  </div>
+</body>
+
+</html>

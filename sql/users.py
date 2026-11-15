@@ -1,0 +1,65 @@
+import db
+
+def create_user(username, password_hash):
+    sql = """INSERT INTO users (username, password_hash) 
+                VALUES (?, ?)
+                ;"""
+    
+    db.execute(sql, [username, password_hash])
+
+def get_hash(username):
+    sql = """SELECT id, password_hash 
+                FROM users 
+                WHERE username = ?
+                ;"""
+    res = db.query(sql, [username])
+
+    error = "VIRHE: Annettua käyttäjänimeä ei ole tietokannassa."
+
+    return res[0] if res else error
+
+# Get specific user
+def get_user(user_id):
+    sql = """SELECT id, username
+            FROM users
+            WHERE id = ?
+            ;"""
+    
+    res = db.query(sql, [user_id])
+
+    error = "VIRHE: Kysely ei tuottanut tulosta. Kyseiselle id-numerolle ei ole käyttäjää."
+
+    return res[0] if res else error
+
+def get_users_reviews(user_id):
+    sql = """SELECT R.movie, R.id
+            FROM users U, reviews R
+            WHERE U.id = R.user_id
+            AND U.id = ?
+            ;"""
+    
+    res = db.query(sql, [user_id])
+
+    return res if res else None
+
+# Fetch all users
+def fetch_users(page, page_size):
+    sql = """SELECT username, id
+            FROM users
+            ORDER BY username DESC
+            LIMIT ? OFFSET ?
+            ;"""
+    
+    limit = page_size
+    offset = page_size * (page - 1)
+    
+    res = db.query(sql, [limit, offset])
+
+    return res if res else None
+
+def users_count():
+    sql = """SELECT COUNT(id)
+            FROM users
+            ;"""
+    
+    return db.query(sql)[0]

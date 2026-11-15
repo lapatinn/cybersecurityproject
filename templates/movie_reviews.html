@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <link rel="stylesheet" href="/static/main.css">
+    <title>Elokuva-arvostelut</title>
+</head>
+
+<body>
+    <div class="header">
+    <h1>
+        Elokuva-arvostelut
+    </h1>
+    </div>
+    
+    <div class="nav">
+        <a href="/">Etusivulle</a> |
+        <a href="/movie_reviews">Arvostelut</a> |
+        <a href="/new_item">Luo arvostelu</a> |
+        <a href="/find_review">Etsi arvostelu</a> |
+        <a href="/all_users">Käyttäjät</a> 
+    </div>
+
+    <div class="content">
+    <p>
+        <a href="/movie_reviews/{{ page - 1 }}">&lt;&lt;</a>
+        Sivu {{ page }}/{{ page_count }}
+        <a href="/movie_reviews/{{ page + 1 }}">&gt;&gt;</a>
+        <hr />
+    </p>
+    {% if items %}
+    <ul>
+        {% for item in items %}
+        <p><a href="/movie_review/{{ item.id }}">{{ item.movie }}</a>
+            <br />
+            <p>Tekijä: {{ item.username }} | Arvosana: {{ item.rating }}</p>
+            <hr />
+        </p>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>
+        Ei arvosteluja (vielä).
+    </p>
+    {% endif %}
+    <p>
+        <hr />
+        <a href="/movie_reviews/{{ page - 1 }}">&lt;&lt;</a>
+        Sivu {{ page }}/{{ page_count }}
+        <a href="/movie_reviews/{{ page + 1 }}">&gt;&gt;</a>
+    </p>
+    </div>
+</body>
+</html>

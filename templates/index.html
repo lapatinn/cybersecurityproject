@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link rel="stylesheet" href="/static/main.css">
+  <title>Kirjainlaatikko</title>
+</head>
+
+<body>
+  <div class="header">
+    <h1>KirjainLaatikko</h1>
+  </div>
+  
+  <div class="nav">
+    <a href="/movie_reviews">Arvostelut</a> |
+    <a href="/new_item">Luo arvostelu</a> |
+    <a href="/find_review">Etsi arvostelu</a> |
+    <a href="/all_users">Käyttäjät</a> 
+  </div>
+
+  <div class="content">
+    <h2>Kirjautuminen</h2>
+      {% if session.username %}
+      <p>
+        Tervetuloa <a href="/show_user/{{ session.user_id }}">{{session.username}}!</a>
+      </p>
+      <p>
+        Aika arvostella elokuvia!
+      </p>
+      <p>
+        <a href="/logout">Kirjaudu ulos</a>
+      </p>
+      {% else %}
+      
+      {% for message in get_flashed_messages() %}
+      <p>
+        <b>{{ message }}</b>
+      </p>
+      {% endfor %}
+
+      <p>
+        <a href="/register">Luo tunnus</a>
+      </p>
+
+      <form action="/login" method="post"> 
+        <p>
+          Tunnus: <br />
+          <input type="text" name="username" required/>
+        </p>
+        <p>
+          Salasana: <br />
+          <input type="password" name="password" required/>
+        </p>
+        <input type="submit" value="Kirjaudu" />
+        <p></p>
+      </form>
+      {% endif %}
+    
+    <h2>{{ message }}</h2>
+    <p>
+      Tämä on asiantuntijoidemme laatima lista
+    </p>
+    <ul>
+      {% for item in items%}
+      <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+
+    <img src="/static/madagascar.png" alt="Animaatioelokuva Madagascarin päähahmot rivissä"/>
+  </div>
+
+</body>
+
+</html>
