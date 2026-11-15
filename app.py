@@ -2,6 +2,7 @@ import sqlite3
 import math
 import secrets
 import markupsafe
+import os
 
 from flask import Flask, render_template, request, redirect, session, flash, abort
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -59,7 +60,7 @@ def show_lines(content):
 # Frontpage
 @app.route("/")
 def index():
-    movies = ["Terminator", "Star Wars", "Madagascar", "Autot 2", "Matin ennakkotehtävä (rare)"]
+    movies = ["Terminator", "Star Wars", "Madagascar", "Autot 2"]
     return render_template("index.html", message="Parhaat elokuvat 2025", items=movies)
 
 # Registration page
@@ -80,12 +81,17 @@ def create():
         return render_template("register.html",  username=username, \
                         password1=password1, password2=password2)
 
+        # Korjaus: (Älä lähetä käyttäjän syöttämää salasanaa selaimelle)
+        # return render_tempplate("register.html", username=username)
+
     if password1 != password2:
         error = "VIRHE: Salasanat eivät täsmää!"
         flash(error)
         return render_template("register.html", username=username)
 
     if len(password1) < 3:
+    # Korjaus: (Vaadi hieman pidempi salasana)
+    # if len(password1) < 8:
         error = "VIRHE: Liian lyhyt salasana (väh. 3 merkkiä)!"
         flash(error)
         return render_template("register.html", username=username)
@@ -116,8 +122,6 @@ def login():
         flash(error)
         return redirect("/")
 
-    # user.get_hash() returns an sql-object if no errors, 
-    # otherwise the error message will be returned:
     if type(res) is str:
         flash(res)
         return redirect("/")
@@ -211,16 +215,18 @@ def remove_comment(comment_id):
     if type(comment) is str:
         return render_template("error_message.html", login_error=comment)
 
-    if request.method == "GET":
-        if comment["user_id"] != session["user_id"]:
-            error = "VIRHE: Et voi poistaa muiden kommentteja!"
-            return render_template("error_message.html", login_error=error)
+    # Korjaus: (Kommentin poistovarmistusta ei näytetä ellei käyttäjä ole oikea)
+    # if request.method == "GET":
+    #     if comment["user_id"] != session["user_id"]:
+    #         error = "VIRHE: Et voi poistaa muiden kommentteja!"
+    #         return render_template("error_message.html", login_error=error)
 
     if request.method == "POST":
         check_csrf()
-        if comment["user_id"] != session["user_id"]:
-            error = "VIRHE: Et voi poistaa muiden kommentteja!"
-            return render_template("error_message.html", login_error=error)
+        # Korjaus: (Kommentin poisto ei mene läpi ellei käyttäjä ole oikea)
+        # if comment["user_id"] != session["user_id"]:
+        #     error = "VIRHE: Et voi poistaa muiden kommentteja!"
+        #     return render_template("error_message.html", login_error=error)
 
         review_id = comment[3]
 
@@ -245,9 +251,10 @@ def edit_item(item_id):
     if type(review) is str:
         return render_template("error_message.html", rnf_error=review)
 
-    if review["user_id"] != session["user_id"]:
-        error = "VIRHE: Et voi muokata muiden arvosteluja!"
-        return render_template("error_message.html", rnf_error=error)
+    # Korjaus: (Muokkausnäkymää ei näytetä ellei käyttäjä ole oikea)
+    # if review["user_id"] != session["user_id"]:
+    #     error = "VIRHE: Et voi muokata muiden arvosteluja!"
+    #     return render_template("error_message.html", rnf_error=error)
 
     return render_template("edit.html", item=review, info=info[0])
 
@@ -263,9 +270,10 @@ def update_review():
     review_id = request.form["item_id"]
     review = reviews.get_review(review_id)
 
-    if review["user_id"] != session["user_id"]:
-        error = "VIRHE: Et voi muokata muiden arvosteluja!"
-        return render_template("error_message.html", login_error=error)
+    # Korjaus: (Muokkaus ei mene läpi ellei käyttäjä ole oikea)
+    # if review["user_id"] != session["user_id"]:
+    #     error = "VIRHE: Et voi muokata muiden arvosteluja!"
+    #     return render_template("error_message.html", login_error=error)
 
     movie_title = request.form["title"]
     movie_rating = request.form["rating"]
@@ -294,9 +302,11 @@ def remove_review(item_id):
 
     if request.method == "GET":
         review = reviews.get_review(item_id)
-        if review["user_id"] != session["user_id"]:
-            error = "VIRHE: Et voi poistaa muiden arvosteluja!"
-            return render_template("error_message.html", login_error=error)
+
+        # Korjaus: (Poistonäkymää ei näytetä ellei käyttäjä ole oikea)
+        # if review["user_id"] != session["user_id"]:
+        #     error = "VIRHE: Et voi poistaa muiden arvosteluja!"
+        #     return render_template("error_message.html", login_error=error)
 
         return render_template("remove_review.html", item=review)
 
@@ -306,12 +316,17 @@ def remove_review(item_id):
         review = reviews.get_review(item_id)
 
         if "remove" in request.form:
-            if review["user_id"] != session["user_id"]:
-                error = "VIRHE: Et voi poistaa muiden arvosteluja!"
-                return render_template("error_message.html", login_error=error)
-            else:
-                reviews.remove_review(item_id)
-                return redirect("/movie_reviews")
+
+            # Korjaus: (Poisto ei mene läpi ellei käyttäjä ole oikea)
+            # if review["user_id"] != session["user_id"]:
+            #     error = "VIRHE: Et voi poistaa muiden arvosteluja!"
+            #     return render_template("error_message.html", login_error=error)
+            # else:
+            #     reviews.remove_review(item_id)
+            #     return redirect("/movie_reviews")
+
+            reviews.remove_review(item_id)
+            return redirect("/movie_reviews")
         else:
             return redirect("/movie_review/" + str(item_id))
 

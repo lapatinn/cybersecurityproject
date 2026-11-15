@@ -14,6 +14,9 @@ def get_hash(username):
                 ;"""
     res = db.query(sql, [username])
 
+    # Korjaus: Älä palauta eri virheviestiä puuttuvalle käyttäjälle ja väärälle salasanalle
+    # error = "VIRHE: Väärä tunnus tai salasana!"
+
     error = "VIRHE: Annettua käyttäjänimeä ei ole tietokannassa."
 
     return res[0] if res else error

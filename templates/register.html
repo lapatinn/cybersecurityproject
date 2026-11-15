@@ -37,10 +37,14 @@
     <p>
       Salasana: <br />
       <input type="password" name="password1" value="{{ password1 }}"required/>
+      <!-- Korjaus: Älä autofillaa salasanoja kenttiin -->
+      <!-- <input type="password" name="password1"required/> -->
     </p>
     <p>
       Salasana uudestaan: <br />
       <input type="password" name="password2" value="{{ password2 }}"required/>
+      <!-- Korjaus: Älä autofillaa salasanoja kenttiin
+      <input type="password" name="password2"required/> -->
     </p>
     <input type="submit" value="Luo tunnus" />
   </form>

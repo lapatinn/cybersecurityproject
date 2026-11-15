@@ -76,12 +76,18 @@ def remove_review(item_id):
 
 # Search for reviews
 def find_reviews(query):
+    # Korjaus: (Käytä parametrisoitua sql-kyselyä)
+    # sql = """SELECT id, movie FROM reviews
+    #         WHERE movie LIKE ?
+    #         ORDER BY id DESC
+    #         ;"""
+
     sql = """SELECT id, movie FROM reviews
-            WHERE movie LIKE ?
+            WHERE movie LIKE '%""" + query + """%'
             ORDER BY id DESC
             ;"""
     
-    return db.query(sql, ["%" + query + "%"])
+    return db.query(sql)
 
 # Get genre, director, year of specific review
 def get_info(item_id):
