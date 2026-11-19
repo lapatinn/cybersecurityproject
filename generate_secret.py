@@ -1,3 +1,5 @@
+# Fix 2.3.1: Generate cryptographic secret key and write to config.py
+
 from pathlib import Path
 import secrets
 

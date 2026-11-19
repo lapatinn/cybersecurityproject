@@ -3,6 +3,7 @@ import math
 import secrets
 import markupsafe
 import os
+import re
 
 from flask import Flask, render_template, request, redirect, session, flash, abort
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -25,18 +26,15 @@ def check_csrf():
         abort(403)
 
 def check_movie(title, rating, review, genre, director, year):
-    # Check for non-empty title and string length
     if title.isspace() or len(title) <= 0 or len(title) > 75 \
         or len(review) <= 0 or len(review) > 1000 \
         or len(director) <= 0 or len(director) > 50:
         return False
 
-    # Check integers
     if rating == "" or int(rating) <= 0 or int(rating) > 10 \
         or year == "" or int(year) < 1878 or int(year) > 2025:
         return False
 
-    # Check that genre exists
     if genre == "":
         return False
 
@@ -50,25 +48,21 @@ def check_comment(comment):
 
     return True
 
-# Newline filter
 @app.template_filter()
 def show_lines(content):
     content = str(markupsafe.escape(content))
     content = content.replace("\n", "<br />")
     return markupsafe.Markup(content)
 
-# Frontpage
 @app.route("/")
 def index():
     movies = ["Terminator", "Star Wars", "Madagascar", "Autot 2"]
     return render_template("index.html", message="Parhaat elokuvat 2025", items=movies)
 
-# Registration page
 @app.route("/register")
 def register():
     return render_template("register.html")
 
-# Registration handler
 @app.route("/create", methods=["POST"])
 def create():
     username = request.form["username"]
@@ -81,22 +75,30 @@ def create():
         return render_template("register.html",  username=username, \
                         password1=password1, password2=password2)
 
-        # Korjaus: (Älä lähetä käyttäjän syöttämää salasanaa selaimelle)
-        # return render_tempplate("register.html", username=username)
-
     if password1 != password2:
         error = "VIRHE: Salasanat eivät täsmää!"
         flash(error)
         return render_template("register.html", username=username)
 
     if len(password1) < 3:
-    # Korjaus: (Vaadi hieman pidempi salasana)
-    # if len(password1) < 8:
         error = "VIRHE: Liian lyhyt salasana (väh. 3 merkkiä)!"
         flash(error)
         return render_template("register.html", username=username)
 
-    password_hash = generate_password_hash(password1)
+    # Fix 4.1: Require longer password, password must contain letters and numbers
+    # if (
+    #     len(password1) < 8
+    #     or re.search(r"[A-Za-z]", password1) is None
+    #     or re.search(r"[0-9]", password1) is None
+    # ):
+    #     error = "VIRHE: Salasanan pitää olla vähintään 8 merkkiä ja sisältää kirjaimia sekä numeroita!"
+    #     flash(error)
+    #     return render_template("register.html", username=username)
+
+    password_hash = password1
+
+    # Fix 2.1: Store hashed passwords in database instead of plaintext
+    # password_hash = generate_password_hash(password1)
 
     try:
         users.create_user(username, password_hash)
@@ -109,7 +111,6 @@ def create():
     flash(f"Tunnus {username} luotu! Voit nyt kirjautua sisään.")
     return redirect("/")
 
-# Login handler
 @app.route("/login", methods=["POST"])
 def login():
     username = request.form["username"]
@@ -129,7 +130,16 @@ def login():
         user_id = res["id"]
         password_hash = res["password_hash"]
 
-    if check_password_hash(password_hash, password):
+    # Fix 2.2: Use function to compare hashed password to user input
+    # if check_password_hash(password_hash, password):
+    #     session["user_id"] = user_id
+    #     session["username"] = username
+    #     session["csrf_token"] = secrets.token_hex(16)
+
+    #     return redirect("/")
+
+    # Fix 2.2.1: This if-statement must be commented out for the fix to work!
+    if password == password_hash:
         session["user_id"] = user_id
         session["username"] = username
         session["csrf_token"] = secrets.token_hex(16)
@@ -139,7 +149,6 @@ def login():
         error = "VIRHE: väärä tunnus tai salasana!"
         return render_template("error_message.html", login_error=error)
 
-# Logout handler
 @app.route("/logout")
 def logout():
     if "user_id" in session:
@@ -147,19 +156,20 @@ def logout():
         del session["username"]
         return redirect("/")
 
-# New review page
 @app.route("/new_item")
 def new_item():
     return render_template("new_item.html")
 
-# New review handler
 @app.route("/create_item", methods=["POST"])
 def create_item():
-    login_error = require_login()
-    if login_error:
-        return login_error
 
-    check_csrf()
+    # Fix 4.2: Require login upon adding a new review to database
+    # login_error = require_login()
+    # if login_error:
+    #     return login_error
+
+    # Fix 5.1: Validate csrf token upon adding a new review to database
+    # check_csrf()
 
     user_id = session["user_id"]
     movie_title = request.form["title"]
@@ -181,14 +191,16 @@ def create_item():
 
     return redirect("/movie_reviews")
 
-# New comment handler
 @app.route("/create_comment", methods=["POST"])
 def create_comment():
-    login_error = require_login()
-    if login_error:
-        return login_error
 
-    check_csrf()
+    # Fix 4.3: Require login upon leaving a comment
+    # login_error = require_login()
+    # if login_error:
+    #     return login_error
+
+    # Fix 5.2: Validate csrf token upon leaving a comment
+    # check_csrf()
 
     comment = request.form["comment"]
     user_id =  session["user_id"]
@@ -203,27 +215,30 @@ def create_comment():
 
     return redirect("/movie_review/" + review_id)
 
-# Remove comment handler
 @app.route("/remove_comment/<int:comment_id>", methods=["GET","POST"])
 def remove_comment(comment_id):
-    login_error = require_login()
-    if login_error:
-        return login_error
+
+    # Fix 4.4: Require login upon removing a comment
+    # login_error = require_login()
+    # if login_error:
+    #     return login_error
 
     comment = reviews.get_comment(comment_id)
 
     if type(comment) is str:
         return render_template("error_message.html", login_error=comment)
 
-    # Korjaus: (Kommentin poistovarmistusta ei näytetä ellei käyttäjä ole oikea)
+    # Fix 1.1: Validate user access on showing confirmation of removal of comment
     # if request.method == "GET":
     #     if comment["user_id"] != session["user_id"]:
     #         error = "VIRHE: Et voi poistaa muiden kommentteja!"
     #         return render_template("error_message.html", login_error=error)
 
     if request.method == "POST":
-        check_csrf()
-        # Korjaus: (Kommentin poisto ei mene läpi ellei käyttäjä ole oikea)
+        # Fix 5.3: Validate csrf token upon confirming removal of comment
+        # check_csrf()
+    
+        # Fix 1.2: Validate user access on removal of comment
         # if comment["user_id"] != session["user_id"]:
         #     error = "VIRHE: Et voi poistaa muiden kommentteja!"
         #     return render_template("error_message.html", login_error=error)
@@ -238,12 +253,13 @@ def remove_comment(comment_id):
 
     return render_template("remove_comment.html", comment=comment)
 
-# Edit review page
 @app.route("/edit_review/<int:item_id>")
 def edit_item(item_id):
-    login_error = require_login()
-    if login_error:
-        return login_error
+
+    # Fix 4.5: Require login on showing editing page
+    # login_error = require_login()
+    # if login_error:
+    #     return login_error
 
     review = reviews.get_review(item_id)
     info = reviews.get_info(item_id)
@@ -251,26 +267,28 @@ def edit_item(item_id):
     if type(review) is str:
         return render_template("error_message.html", rnf_error=review)
 
-    # Korjaus: (Muokkausnäkymää ei näytetä ellei käyttäjä ole oikea)
+    # Fix 1.3: Validate user access when showing edit_review-page
     # if review["user_id"] != session["user_id"]:
     #     error = "VIRHE: Et voi muokata muiden arvosteluja!"
     #     return render_template("error_message.html", rnf_error=error)
 
     return render_template("edit.html", item=review, info=info[0])
 
-# Edit review handler
 @app.route("/update_review", methods=["POST"])
 def update_review():
-    login_error = require_login()
-    if login_error:
-        return login_error
 
-    check_csrf()
+    # Fix 4.6: Require login on updating review data
+    # login_error = require_login()
+    # if login_error:
+    #     return login_error
+
+    # Fix 5.4: Validate csrf token upon updating review data
+    #check_csrf()
 
     review_id = request.form["item_id"]
     review = reviews.get_review(review_id)
 
-    # Korjaus: (Muokkaus ei mene läpi ellei käyttäjä ole oikea)
+    # Fix 1.4: Validate user access before updating review data
     # if review["user_id"] != session["user_id"]:
     #     error = "VIRHE: Et voi muokata muiden arvosteluja!"
     #     return render_template("error_message.html", login_error=error)
@@ -293,31 +311,34 @@ def update_review():
 
     return redirect("/movie_review/" + review_id)
 
-# Remove review page
 @app.route("/remove_review/<int:item_id>", methods=["GET","POST"])
 def remove_review(item_id):
-    login_error = require_login()
-    if login_error:
-        return login_error
+
+    # Fix 4.7: Require login on showing confirmation of review deletion
+    # login_error = require_login()
+    # if login_error:
+    #     return login_error
 
     if request.method == "GET":
         review = reviews.get_review(item_id)
 
-        # Korjaus: (Poistonäkymää ei näytetä ellei käyttäjä ole oikea)
+        # Fix 1.5: Validate user access when showing remove_review page
         # if review["user_id"] != session["user_id"]:
         #     error = "VIRHE: Et voi poistaa muiden arvosteluja!"
         #     return render_template("error_message.html", login_error=error)
 
         return render_template("remove_review.html", item=review)
 
-    # Remove review handler
     if request.method == "POST":
-        check_csrf()
+
+        # Fix 5.5: Validate csrf token upon removing review from database
+        # check_csrf()
+
         review = reviews.get_review(item_id)
 
         if "remove" in request.form:
 
-            # Korjaus: (Poisto ei mene läpi ellei käyttäjä ole oikea)
+            # Fix 1.6: Validate user access when removing review from database
             # if review["user_id"] != session["user_id"]:
             #     error = "VIRHE: Et voi poistaa muiden arvosteluja!"
             #     return render_template("error_message.html", login_error=error)
@@ -330,7 +351,6 @@ def remove_review(item_id):
         else:
             return redirect("/movie_review/" + str(item_id))
 
-# Search page
 @app.route("/find_review")
 def search_review():
     query = request.args.get("query")
@@ -342,7 +362,6 @@ def search_review():
 
     return render_template("find_review.html", query=query, results=results)
 
-# All reviews page
 @app.route("/movie_reviews")
 @app.route("/movie_reviews/<int:page>")
 def movie_reviews(page=1):
@@ -360,7 +379,6 @@ def movie_reviews(page=1):
     return render_template("movie_reviews.html", items=all_reviews,
                            page=page, page_count=page_count)
 
-# Show review page
 @app.route("/movie_review/<int:item_id>")
 def page(item_id):
     review = reviews.get_review(item_id)
@@ -373,7 +391,6 @@ def page(item_id):
     else:
         return render_template("show_review.html", item=review, info=info, comments=comments)
 
-# Show user page
 @app.route("/show_user/<int:user_id>")
 def show_user(user_id):
     user = users.get_user(user_id)
@@ -385,7 +402,6 @@ def show_user(user_id):
         items = users.get_users_reviews(user_id)
         return render_template("show_user.html", user=user, reviews=items)
 
-# All users page
 @app.route("/all_users")
 @app.route("/all_users/<int:page>")
 def all_users(page=1):
