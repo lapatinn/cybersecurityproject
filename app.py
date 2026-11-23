@@ -32,7 +32,7 @@ def check_movie(title, rating, review, genre, director, year):
         return False
 
     if rating == "" or int(rating) <= 0 or int(rating) > 10 \
-        or year == "" or int(year) < 1878 or int(year) > 2025:
+        or year == "" or int(year) < 1878 or int(year) > 2026:
         return False
 
     if genre == "":
@@ -145,6 +145,7 @@ def login():
         session["csrf_token"] = secrets.token_hex(16)
 
         return redirect("/")
+    # Uncomment until here
     else:
         error = "VIRHE: väärä tunnus tai salasana!"
         return render_template("error_message.html", login_error=error)
@@ -162,13 +163,11 @@ def new_item():
 
 @app.route("/create_item", methods=["POST"])
 def create_item():
+    login_error = require_login()
+    if login_error:
+        return login_error
 
-    # Fix 4.2: Require login upon adding a new review to database
-    # login_error = require_login()
-    # if login_error:
-    #     return login_error
-
-    # Fix 5.1: Validate csrf token upon adding a new review to database
+    # Fix 5: Validate csrf token upon adding a new review to database
     # check_csrf()
 
     user_id = session["user_id"]
@@ -193,14 +192,10 @@ def create_item():
 
 @app.route("/create_comment", methods=["POST"])
 def create_comment():
-
-    # Fix 4.3: Require login upon leaving a comment
-    # login_error = require_login()
-    # if login_error:
-    #     return login_error
-
-    # Fix 5.2: Validate csrf token upon leaving a comment
-    # check_csrf()
+    login_error = require_login()
+    if login_error:
+        return login_error
+    check_csrf()
 
     comment = request.form["comment"]
     user_id =  session["user_id"]
@@ -217,31 +212,26 @@ def create_comment():
 
 @app.route("/remove_comment/<int:comment_id>", methods=["GET","POST"])
 def remove_comment(comment_id):
-
-    # Fix 4.4: Require login upon removing a comment
-    # login_error = require_login()
-    # if login_error:
-    #     return login_error
+    login_error = require_login()
+    if login_error:
+        return login_error
 
     comment = reviews.get_comment(comment_id)
 
     if type(comment) is str:
         return render_template("error_message.html", login_error=comment)
 
-    # Fix 1.1: Validate user access on showing confirmation of removal of comment
-    # if request.method == "GET":
-    #     if comment["user_id"] != session["user_id"]:
-    #         error = "VIRHE: Et voi poistaa muiden kommentteja!"
-    #         return render_template("error_message.html", login_error=error)
+    if request.method == "GET":
+        if comment["user_id"] != session["user_id"]:
+            error = "VIRHE: Et voi poistaa muiden kommentteja!"
+            return render_template("error_message.html", login_error=error)
 
     if request.method == "POST":
-        # Fix 5.3: Validate csrf token upon confirming removal of comment
-        # check_csrf()
+        check_csrf()
     
-        # Fix 1.2: Validate user access on removal of comment
-        # if comment["user_id"] != session["user_id"]:
-        #     error = "VIRHE: Et voi poistaa muiden kommentteja!"
-        #     return render_template("error_message.html", login_error=error)
+        if comment["user_id"] != session["user_id"]:
+            error = "VIRHE: Et voi poistaa muiden kommentteja!"
+            return render_template("error_message.html", login_error=error)
 
         review_id = comment[3]
 
@@ -255,11 +245,9 @@ def remove_comment(comment_id):
 
 @app.route("/edit_review/<int:item_id>")
 def edit_item(item_id):
-
-    # Fix 4.5: Require login on showing editing page
-    # login_error = require_login()
-    # if login_error:
-    #     return login_error
+    login_error = require_login()
+    if login_error:
+        return login_error
 
     review = reviews.get_review(item_id)
     info = reviews.get_info(item_id)
@@ -267,7 +255,7 @@ def edit_item(item_id):
     if type(review) is str:
         return render_template("error_message.html", rnf_error=review)
 
-    # Fix 1.3: Validate user access when showing edit_review-page
+    # Fix 1.1: Validate user access when showing edit_review-page
     # if review["user_id"] != session["user_id"]:
     #     error = "VIRHE: Et voi muokata muiden arvosteluja!"
     #     return render_template("error_message.html", rnf_error=error)
@@ -276,19 +264,15 @@ def edit_item(item_id):
 
 @app.route("/update_review", methods=["POST"])
 def update_review():
-
-    # Fix 4.6: Require login on updating review data
-    # login_error = require_login()
-    # if login_error:
-    #     return login_error
-
-    # Fix 5.4: Validate csrf token upon updating review data
-    #check_csrf()
+    login_error = require_login()
+    if login_error:
+        return login_error
+    check_csrf()
 
     review_id = request.form["item_id"]
     review = reviews.get_review(review_id)
 
-    # Fix 1.4: Validate user access before updating review data
+    # Fix 1.2: Validate user access before updating review data
     # if review["user_id"] != session["user_id"]:
     #     error = "VIRHE: Et voi muokata muiden arvosteluja!"
     #     return render_template("error_message.html", login_error=error)
@@ -313,39 +297,33 @@ def update_review():
 
 @app.route("/remove_review/<int:item_id>", methods=["GET","POST"])
 def remove_review(item_id):
-
-    # Fix 4.7: Require login on showing confirmation of review deletion
-    # login_error = require_login()
+    login_error = require_login()
+    # Fix 6.1 Require login check on removing reviews
     # if login_error:
     #     return login_error
 
     if request.method == "GET":
         review = reviews.get_review(item_id)
-
-        # Fix 1.5: Validate user access when showing remove_review page
-        # if review["user_id"] != session["user_id"]:
-        #     error = "VIRHE: Et voi poistaa muiden arvosteluja!"
-        #     return render_template("error_message.html", login_error=error)
+        if not login_error:
+            if review["user_id"] != session["user_id"]:
+                error = "VIRHE: Et voi poistaa muiden arvosteluja!"
+                return render_template("error_message.html", login_error=error)
 
         return render_template("remove_review.html", item=review)
 
     if request.method == "POST":
-
-        # Fix 5.5: Validate csrf token upon removing review from database
-        # check_csrf()
+        check_csrf()
 
         review = reviews.get_review(item_id)
 
         if "remove" in request.form:
-
-            # Fix 1.6: Validate user access when removing review from database
-            # if review["user_id"] != session["user_id"]:
-            #     error = "VIRHE: Et voi poistaa muiden arvosteluja!"
-            #     return render_template("error_message.html", login_error=error)
-            # else:
-            #     reviews.remove_review(item_id)
-            #     return redirect("/movie_reviews")
-
+            if not login_error:
+                if review["user_id"] != session["user_id"]:
+                    error = "VIRHE: Et voi poistaa muiden arvosteluja!"
+                    return render_template("error_message.html", login_error=error)
+                else:
+                    reviews.remove_review(item_id)
+                    return redirect("/movie_reviews")
             reviews.remove_review(item_id)
             return redirect("/movie_reviews")
         else:
@@ -386,7 +364,6 @@ def page(item_id):
     comments = reviews.fetch_comments(item_id)
 
     if type(review) is str:
-        # rnf = Review Not Found
         return render_template("error_message.html", rnf_error=review)
     else:
         return render_template("show_review.html", item=review, info=info, comments=comments)
@@ -396,7 +373,6 @@ def show_user(user_id):
     user = users.get_user(user_id)
 
     if type(user) is str:
-        # unf = User Not Found
         return render_template("error_message.html", unf_error=user)
     else:
         items = users.get_users_reviews(user_id)
